@@ -1,0 +1,170 @@
+:root {
+  /* Primary Colors */
+  --primary: #2c7fb8;
+  --primary-light: #7fcdee;
+  --primary-dark: #1a5c8e;
+
+  /* Secondary Colors */
+  --secondary: #5a6268;
+  --secondary-light: #7d868c;
+  --secondary-dark: #3d4347;
+
+  /* Accent Colors */
+  --accent-success: #28a745;
+  --accent-warning: #ffc107;
+  --accent-danger: #dc3545;
+  --accent-info: #17a2b8;
+
+  /* Background Colors */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8f9fa;
+  --bg-light: #e9ecef;
+
+  /* Text Colors */
+  --text-primary: #2c3e50;
+  --text-secondary: #6c757d;
+  --text-light: #95a5a6;
+  --text-white: #ffffff;
+
+  /* Border Colors */
+  --border-color: #dee2e6;
+  --border-radius: 0.5rem;
+
+  /* Status Colors */
+  --status-scheduled: var(--accent-warning);
+  --status-completed: var(--accent-success);
+  --status-cancelled: var(--accent-danger);
+}
+
+/* Bootstrap Theme Overrides */
+.btn-primary {
+  background-color: var(--primary);
+  border-color: var(--primary);
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-dark);
+  border-color: var(--primary-dark);
+}
+
+.btn-outline-primary {
+  color: var(--primary);
+  border-color: var(--primary);
+}
+
+.btn-outline-primary:hover {
+  background-color: var(--primary);
+  border-color: var(--primary);
+}
+
+.navbar-dark.bg-primary {
+  background-color: var(--primary) !important;
+}
+
+.card {
+  border-radius: var(--border-radius);
+  border-color: var(--border-color);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.card:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transition: box-shadow 0.3s ease;
+}
+
+.form-control:focus {
+  border-color: var(--primary-light);
+  box-shadow: 0 0 0 0.2rem rgba(44, 127, 184, 0.25);
+}
+
+/* Status Badge Colors */
+.badge.bg-warning {
+  background-color: var(--status-scheduled) !important;
+  color: #000;
+}
+
+.badge.bg-success {
+  background-color: var(--status-completed) !important;
+}
+
+.badge.bg-danger {
+  background-color: var(--status-cancelled) !important;
+}
+
+/* Custom Components */
+.dashboard-stat-card {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  color: var(--text-white);
+}
+
+.appointment-card {
+  border-left: 4px solid var(--primary);
+}
+
+.doctor-card {
+  border-top: 4px solid var(--primary);
+}
+
+/* Navigation Styles */
+.nav-link {
+  color: var(--text-primary);
+}
+
+.nav-link:hover {
+  color: var(--primary);
+}
+
+.nav-link.active {
+  color: var(--primary) !important;
+}
+
+/* Toast Notifications */
+.Toastify__toast--success {
+  background-color: var(--accent-success) !important;
+}
+
+.Toastify__toast--error {
+  background-color: var(--accent-danger) !important;
+}
+
+/* Form Styles */
+.form-label {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+/* Table Styles */
+.table {
+  color: var(--text-primary);
+}
+
+.table thead th {
+  background-color: var(--bg-secondary);
+  border-bottom: 2px solid var(--primary);
+}
+
+/* Modal Styles */
+.modal-header {
+  background-color: var(--primary);
+  color: var(--text-white);
+}
+
+.modal-content {
+  border-radius: var(--border-radius);
+}
+
+/* Custom Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+} 
