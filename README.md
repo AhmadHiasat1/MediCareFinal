@@ -14,14 +14,10 @@ medicare-app/
 
 ### Frontend
 - React 18.2 (with Vite)
-- Redux Toolkit (State Management)
-- Bootstrap 5 (UI Framework)
-- React Router DOM (Routing)
-- Axios (HTTP Client)
-- React Toastify (Notifications)
-- Formik + Yup (Form Management)
-- React Calendar (Date/Time Selection)
-- FontAwesome (Icons)
+- Redux
+- Bootstrap 5
+- React Router DOM
+- Axios
 
 ### Backend
 - Node.js
@@ -29,8 +25,6 @@ medicare-app/
 - PostgreSQL
 - node-postgres (pg)
 - JWT Authentication
-- Bcryptjs (Password Hashing)
-- Express-validator (Input Validation)
 - CORS
 - Dotenv
 
@@ -160,18 +154,6 @@ All API endpoints are prefixed with `/api`.
 - `GET /api/patients/:id/prescriptions` - Get all prescriptions for a patient
 - `GET /api/prescriptions/:prescriptionId` - Get prescription details
 - `POST /api/prescriptions` - Create prescription (doctor only)
-
-## Development Notes
-
-- **Migrations**: SQL migrations are in `backend/src/database/migrations.sql` and run via `npm run migrate`.
-- **Environment**: Use `.env` for sensitive config.
-- **Testing**: Health check at `/api/health`.
-- **State Management**: Redux Toolkit is used for frontend state.
-- **Styling**: Bootstrap 5 and custom CSS in `frontend/src/styles/theme.css`.
-
-## Contributing
-
-Please read CONTRIBUTING.md for details on our code of conduct and the process for submitting pull requests.
 
 ## License
 
