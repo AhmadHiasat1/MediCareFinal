@@ -46,7 +46,6 @@ Patient.init({
   modelName: 'Patient'
 });
 
-// Associations
 Patient.belongsTo(User, { foreignKey: 'userId' });
 
 export default Patient; 

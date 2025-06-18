@@ -62,7 +62,6 @@ TimeSlot.init({
   }
 });
 
-// Associations
 TimeSlot.belongsTo(Doctor, { foreignKey: 'doctorId' });
 
 export default TimeSlot; 

@@ -1,6 +1,5 @@
-import { query, findById, update } from '../utils/db.js';
+import { query, findById, update, transaction } from '../utils/db.js';
 
-// Get patient profile
 export const getPatient = async (req, res) => {
   try {
     const patientQuery = `
@@ -25,7 +24,6 @@ export const getPatient = async (req, res) => {
       });
     }
 
-    // Check if the logged-in user is the patient or a doctor
     if (req.user.role !== 'doctor' && patient.user_id !== req.user.id) {
       return res.status(403).json({
         error: 'Not authorized to view this profile'
@@ -40,12 +38,10 @@ export const getPatient = async (req, res) => {
   }
 };
 
-// Update patient profile
 export const updatePatient = async (req, res) => {
   try {
     const { dateOfBirth, gender, bloodGroup, address, emergencyContact, medicalHistory, allergies } = req.body;
 
-    // Check if patient exists and belongs to the logged-in user
     const checkQuery = `
       SELECT p.* FROM patients p
       JOIN users u ON p.user_id = u.id
@@ -59,7 +55,6 @@ export const updatePatient = async (req, res) => {
       });
     }
 
-    // Update patient profile
     const updatedPatient = await update('patients', req.params.id, {
       date_of_birth: dateOfBirth,
       gender,
@@ -78,7 +73,6 @@ export const updatePatient = async (req, res) => {
   }
 };
 
-// Get patient's appointments
 export const getPatientAppointments = async (req, res) => {
   try {
     const { status, date } = req.query;
@@ -130,12 +124,10 @@ export const getPatientAppointments = async (req, res) => {
   }
 };
 
-// Book appointment
 export const bookAppointment = async (req, res) => {
   try {
     const { doctorId, appointmentDate, timeSlotId, type, reason } = req.body;
 
-    // Get time slot details
     const timeSlotQuery = `
       SELECT * FROM time_slots
       WHERE id = $1 AND doctor_id = $2 AND is_available = true
@@ -148,9 +140,7 @@ export const bookAppointment = async (req, res) => {
       });
     }
 
-    // Create appointment using transaction
     const result = await transaction(async (client) => {
-      // Create appointment
       const appointmentQuery = `
         INSERT INTO appointments (
           doctor_id, patient_id, appointment_date,
@@ -170,7 +160,6 @@ export const bookAppointment = async (req, res) => {
       ];
       const appointment = (await client.query(appointmentQuery, appointmentValues)).rows[0];
 
-      // Update time slot availability
       const updateSlotQuery = `
         UPDATE time_slots
         SET is_available = false
@@ -189,12 +178,10 @@ export const bookAppointment = async (req, res) => {
   }
 };
 
-// Cancel appointment
 export const cancelAppointment = async (req, res) => {
   try {
     const { reason } = req.body;
 
-    // Check if appointment exists and belongs to the patient
     const checkQuery = `
       SELECT a.* FROM appointments a
       WHERE a.id = $1 AND a.patient_id = $2 AND a.status = 'scheduled'
@@ -207,9 +194,7 @@ export const cancelAppointment = async (req, res) => {
       });
     }
 
-    // Cancel appointment using transaction
     const result = await transaction(async (client) => {
-      // Update appointment status
       const updateAppointmentQuery = `
         UPDATE appointments
         SET status = 'cancelled', cancellation_reason = $1
@@ -218,7 +203,6 @@ export const cancelAppointment = async (req, res) => {
       `;
       const updatedAppointment = (await client.query(updateAppointmentQuery, [reason, req.params.appointmentId])).rows[0];
 
-      // Update time slot availability
       const updateSlotQuery = `
         UPDATE time_slots
         SET is_available = true
@@ -260,10 +244,11 @@ export const getPatientPrescriptions = async (req, res) => {
           )
         ) as doctor
       FROM prescriptions p
-      JOIN doctors d ON p.doctor_id = d.id
+      JOIN appointments a ON p.appointment_id = a.id
+      JOIN doctors d ON a.doctor_id = d.id
       JOIN users u ON d.user_id = u.id
-      WHERE p.patient_id = $1
-      ORDER BY p.date DESC
+      WHERE a.patient_id = $1
+      ORDER BY p.created_at DESC
     `;
 
     const prescriptions = await query(prescriptionsQuery, [req.params.id]);
@@ -276,11 +261,56 @@ export const getPatientPrescriptions = async (req, res) => {
   }
 };
 
+// Update appointment (patient)
+export const updateAppointment = async (req, res) => {
+  try {
+    const { appointmentDate, startTime, endTime } = req.body;
+    const { id, appointmentId } = req.params;
+
+    // Check if appointment exists, belongs to patient, and is scheduled
+    const checkQuery = `
+      SELECT * FROM appointments WHERE id = $1 AND patient_id = $2 AND status = 'scheduled'
+    `;
+    const appointment = (await query(checkQuery, [appointmentId, id]))[0];
+    if (!appointment) {
+      return res.status(404).json({ error: 'Appointment not found or cannot be updated' });
+    }
+
+    // Check for time slot conflict
+    const conflictQuery = `
+      SELECT * FROM appointments 
+      WHERE doctor_id = $1 
+        AND appointment_date = $2 
+        AND id != $3
+        AND (
+          (start_time < $5 AND end_time > $4)
+        )
+    `;
+    const conflict = (await query(conflictQuery, [appointment.doctor_id, appointmentDate, appointmentId, startTime, endTime]))[0];
+    if (conflict) {
+      return res.status(400).json({ error: 'This time slot is not available' });
+    }
+
+    // Update appointment
+    const updateQuery = `
+      UPDATE appointments
+      SET appointment_date = $1, start_time = $2, end_time = $3, updated_at = NOW()
+      WHERE id = $4
+      RETURNING *
+    `;
+    const updated = (await query(updateQuery, [appointmentDate, startTime, endTime, appointmentId]))[0];
+    res.json(updated);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
 export default {
   getPatient,
   updatePatient,
   getPatientAppointments,
   bookAppointment,
   cancelAppointment,
-  getPatientPrescriptions
+  getPatientPrescriptions,
+  updateAppointment
 }; 

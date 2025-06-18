@@ -7,16 +7,16 @@ import prescriptionRoutes from './routes/prescription.routes.js';
 
 const app = express();
 
-// Middleware
 app.use(cors());
 app.use(express.json());
 
-// Routes
 app.use('/api', authRoutes);
 app.use('/api', patientRoutes);
 app.use('/api', doctorRoutes);
 app.use('/api', prescriptionRoutes);
 
 export default app; 
+ 
+ 
  
  

@@ -68,7 +68,6 @@ Appointment.init({
   ]
 });
 
-// Associations
 Appointment.belongsTo(Doctor, { foreignKey: 'doctorId' });
 Appointment.belongsTo(Patient, { foreignKey: 'patientId' });
 

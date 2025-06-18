@@ -60,9 +60,6 @@ const Prescriptions = () => {
                     <h5 className="mb-0">
                       Dr. {prescription.doctor.user.firstName} {prescription.doctor.user.lastName}
                     </h5>
-                    <Badge bg="primary">
-                      {format(parseISO(prescription.date), 'MMM dd, yyyy')}
-                    </Badge>
                   </div>
 
                   <p className="mb-2">
@@ -73,24 +70,43 @@ const Prescriptions = () => {
                   <hr className="my-3" />
 
                   <h6 className="mb-3">Medications</h6>
-                  {prescription.medications.map((medication, index) => (
-                    <div key={index} className="mb-3 p-3 bg-light rounded">
-                      <div className="d-flex justify-content-between">
-                        <strong>{medication.name}</strong>
-                        <span>{medication.dosage}</span>
-                      </div>
-                      <p className="text-muted mb-1">
-                        <i className="fas fa-clock me-2"></i>
-                        {medication.frequency}
-                      </p>
-                      {medication.duration && (
-                        <p className="text-muted mb-0">
-                          <i className="fas fa-calendar me-2"></i>
-                          Duration: {medication.duration}
+                  {Array.isArray(prescription.medications) ? (
+                    prescription.medications.map((medication, index) => (
+                      <div key={index} className="mb-3 p-3 bg-light rounded">
+                        <div className="d-flex justify-content-between">
+                          <strong>{medication.name}</strong>
+                          <span>{medication.dosage}</span>
+                        </div>
+                        <p className="text-muted mb-1">
+                          <i className="fas fa-clock me-2"></i>
+                          {medication.frequency}
                         </p>
-                      )}
+                        {medication.duration && (
+                          <p className="text-muted mb-0">
+                            <i className="fas fa-calendar me-2"></i>
+                            Duration: {medication.duration}
+                          </p>
+                        )}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="mb-3 p-3 bg-light rounded">
+                      <strong>{prescription.medications || 'N/A'}</strong>
                     </div>
-                  ))}
+                  )}
+
+                  <h6 className="mb-3">Diagnosis</h6>
+                  {Array.isArray(prescription.diagnosis) ? (
+                    prescription.diagnosis.map((item, index) => (
+                      <div key={index} className="mb-3 p-3 bg-light rounded">
+                        <strong>{item}</strong>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="mb-3 p-3 bg-light rounded">
+                      <strong>{prescription.diagnosis || 'N/A'}</strong>
+                    </div>
+                  )}
 
                   {prescription.instructions && (
                     <>
@@ -111,18 +127,6 @@ const Prescriptions = () => {
                         {prescription.notes}
                       </p>
                     </>
-                  )}
-                </Card.Body>
-              </Card>
-            </Col>
-          ))}
-        </Row>
-      )}
-    </Container>
-  );
-};
-
-export default Prescriptions; 
                   )}
                 </Card.Body>
               </Card>

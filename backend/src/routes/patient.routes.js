@@ -5,7 +5,8 @@ import {
   getPatientAppointments,
   bookAppointment,
   cancelAppointment,
-  getPatientPrescriptions
+  getPatientPrescriptions,
+  updateAppointment
 } from '../controllers/patient.controller.js';
 import { protect, authorize } from '../middleware/auth.middleware.js';
 import { validate } from '../middleware/validate.middleware.js';
@@ -26,5 +27,6 @@ router.get('/:id/prescriptions', authorize('doctor', 'patient'), getPatientPresc
 router.put('/:id', authorize('patient'), validate(updatePatientValidation), updatePatient);
 router.post('/:id/appointments', authorize('patient'), validate(createAppointmentValidation), bookAppointment);
 router.post('/:id/appointments/:appointmentId/cancel', authorize('patient'), validate(cancelAppointmentValidation), cancelAppointment);
+router.put('/:id/appointments/:appointmentId', authorize('patient'), updateAppointment);
 
 export default router; 

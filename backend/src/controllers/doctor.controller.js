@@ -1,6 +1,5 @@
 import { query, findById, update } from '../utils/db.js';
 
-// Get all doctors
 export const getDoctors = async (req, res) => {
   try {
     const doctorsQuery = `
@@ -26,7 +25,6 @@ export const getDoctors = async (req, res) => {
   }
 };
 
-// Get doctor by ID
 export const getDoctor = async (req, res) => {
   try {
     const doctorQuery = `
@@ -59,12 +57,10 @@ export const getDoctor = async (req, res) => {
   }
 };
 
-// Update doctor profile
 export const updateDoctor = async (req, res) => {
   try {
     const { specialization, qualifications, experience, consultationFee, about, availableDays, workingHours } = req.body;
 
-    // Check if doctor exists and belongs to the logged-in user
     const checkQuery = `
       SELECT d.* FROM doctors d
       JOIN users u ON d.user_id = u.id
@@ -78,7 +74,6 @@ export const updateDoctor = async (req, res) => {
       });
     }
 
-    // Update doctor profile
     const updatedDoctor = await update('doctors', req.params.id, {
       specialization,
       qualifications,
@@ -97,7 +92,6 @@ export const updateDoctor = async (req, res) => {
   }
 };
 
-// Get doctor's time slots
 export const getDoctorTimeSlots = async (req, res) => {
   try {
     const timeSlotsQuery = `
@@ -115,12 +109,10 @@ export const getDoctorTimeSlots = async (req, res) => {
   }
 };
 
-// Create time slot
 export const createTimeSlot = async (req, res) => {
   try {
     const { date, startTime, endTime, isRecurring, recurringDay } = req.body;
 
-    // Check if doctor exists and belongs to the logged-in user
     const checkQuery = `
       SELECT d.* FROM doctors d
       JOIN users u ON d.user_id = u.id
@@ -134,7 +126,6 @@ export const createTimeSlot = async (req, res) => {
       });
     }
 
-    // Create time slot
     const createQuery = `
       INSERT INTO time_slots (
         doctor_id, date, start_time, end_time, 
@@ -154,12 +145,10 @@ export const createTimeSlot = async (req, res) => {
   }
 };
 
-// Update time slot
 export const updateTimeSlot = async (req, res) => {
   try {
     const { date, startTime, endTime, isRecurring, recurringDay } = req.body;
 
-    // Check if time slot exists and belongs to the doctor
     const checkQuery = `
       SELECT ts.* FROM time_slots ts
       JOIN doctors d ON ts.doctor_id = d.id
@@ -174,14 +163,12 @@ export const updateTimeSlot = async (req, res) => {
       });
     }
 
-    // Check if slot is available
     if (!timeSlot.is_available) {
       return res.status(400).json({
         error: 'Cannot update a booked time slot'
       });
     }
 
-    // Update time slot
     const updateQuery = `
       UPDATE time_slots
       SET date = $1, start_time = $2, end_time = $3,
@@ -200,10 +187,8 @@ export const updateTimeSlot = async (req, res) => {
   }
 };
 
-// Delete time slot
 export const deleteTimeSlot = async (req, res) => {
   try {
-    // Check if time slot exists and belongs to the doctor
     const checkQuery = `
       SELECT ts.* FROM time_slots ts
       JOIN doctors d ON ts.doctor_id = d.id
@@ -218,14 +203,12 @@ export const deleteTimeSlot = async (req, res) => {
       });
     }
 
-    // Check if slot is available
     if (!timeSlot.is_available) {
       return res.status(400).json({
         error: 'Cannot delete a booked time slot'
       });
     }
 
-    // Delete time slot
     const deleteQuery = `
       DELETE FROM time_slots
       WHERE id = $1
@@ -241,10 +224,8 @@ export const deleteTimeSlot = async (req, res) => {
   }
 };
 
-// Get doctor's appointments
 export const getDoctorAppointments = async (req, res) => {
   try {
-    // Check if doctor exists and belongs to the logged-in user
     const checkQuery = `
       SELECT d.* FROM doctors d
       JOIN users u ON d.user_id = u.id
@@ -258,7 +239,6 @@ export const getDoctorAppointments = async (req, res) => {
       });
     }
 
-    // Get appointments with patient details
     const appointmentsQuery = `
       SELECT 
         a.*,

@@ -45,7 +45,6 @@ export const Prescription = sequelize.define('Prescription', {
   }
 });
 
-// Associations
 Prescription.belongsTo(Doctor, { foreignKey: 'doctorId' });
 Prescription.belongsTo(Patient, { foreignKey: 'patientId' });
 
@@ -96,9 +95,10 @@ export const Prescription = sequelize.define('Prescription', {
   }
 });
 
-// Associations
 Prescription.belongsTo(Doctor, { foreignKey: 'doctorId' });
 Prescription.belongsTo(Patient, { foreignKey: 'patientId' });
 
 export default Prescription; 
+ 
+ 
  

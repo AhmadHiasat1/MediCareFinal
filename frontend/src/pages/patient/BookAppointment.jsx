@@ -222,14 +222,4 @@ const BookAppointment = () => {
   );
 };
 
-export default BookAppointment;                 </Row>
-              </Form>
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
-    </Container>
-  );
-};
-
 export default BookAppointment; 

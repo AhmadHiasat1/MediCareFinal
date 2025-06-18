@@ -44,3 +44,5 @@ router.post('/prescriptions', authorize('doctor'), createPrescription);
 
 export default router; 
  
+ 
+ 

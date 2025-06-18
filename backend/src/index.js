@@ -33,7 +33,7 @@ app.get('/health', (req, res) => {
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  console.error(err.stack);     
   res.status(err.status || 500).json({
     error: {
       message: err.message || 'Internal server error',

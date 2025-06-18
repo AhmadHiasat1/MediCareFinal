@@ -1,6 +1,5 @@
 import { query, transaction } from '../utils/db.js';
 
-// Get all appointments (filtered by user role)
 export const getAppointments = async (req, res) => {
   try {
     const { status, date, from, to } = req.query;
@@ -44,7 +43,6 @@ export const getAppointments = async (req, res) => {
     const queryParams = [];
     let paramCount = 1;
 
-    // Filter by user role
     if (req.user.role === 'doctor') {
       appointmentsQuery += ` AND d.user_id = $${paramCount}`;
       queryParams.push(req.user.id);
@@ -55,14 +53,12 @@ export const getAppointments = async (req, res) => {
       paramCount++;
     }
 
-    // Filter by status
     if (status) {
       appointmentsQuery += ` AND a.status = $${paramCount}`;
       queryParams.push(status);
       paramCount++;
     }
 
-    // Filter by date
     if (date) {
       appointmentsQuery += ` AND a.appointment_date = $${paramCount}`;
       queryParams.push(date);
@@ -84,7 +80,6 @@ export const getAppointments = async (req, res) => {
   }
 };
 
-// Get appointment by ID
 export const getAppointment = async (req, res) => {
   try {
     const appointmentQuery = `
@@ -131,7 +126,6 @@ export const getAppointment = async (req, res) => {
       });
     }
 
-    // Check if user has access to this appointment
     if (req.user.role === 'doctor' && appointment.doctor.user.id !== req.user.id) {
       return res.status(403).json({
         error: 'Not authorized to view this appointment'
@@ -150,7 +144,6 @@ export const getAppointment = async (req, res) => {
   }
 };
 
-// Get doctor's appointments
 export const getDoctorAppointments = async (req, res) => {
   try {
     const { status, date } = req.query;
@@ -201,12 +194,10 @@ export const getDoctorAppointments = async (req, res) => {
   }
 };
 
-// Update appointment status
 export const updateAppointmentStatus = async (req, res) => {
   try {
     const { status, notes } = req.body;
 
-    // Check if appointment exists and belongs to the doctor
     const checkQuery = `
       SELECT a.* FROM appointments a
       JOIN doctors d ON a.doctor_id = d.id
@@ -221,9 +212,7 @@ export const updateAppointmentStatus = async (req, res) => {
       });
     }
 
-    // Update appointment using transaction
     const result = await transaction(async (client) => {
-      // Update appointment status
       const updateQuery = `
         UPDATE appointments
         SET status = $1, notes = $2
@@ -232,7 +221,6 @@ export const updateAppointmentStatus = async (req, res) => {
       `;
       const updatedAppointment = (await client.query(updateQuery, [status, notes, req.params.appointmentId])).rows[0];
 
-      // If appointment is cancelled, make the time slot available again
       if (status === 'cancelled') {
         const updateSlotQuery = `
           UPDATE time_slots
@@ -259,7 +247,6 @@ export const updateAppointmentStatus = async (req, res) => {
   }
 };
 
-// Get appointments with filters
 export const getAppointmentsWithFilters = async (req, res) => {
   try {
     const { doctorId, patientId, date, status } = req.query;
@@ -352,7 +339,6 @@ export const getAppointmentsWithFilters = async (req, res) => {
   }
 };
 
-// Get appointment by ID
 export const getAppointmentById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -423,13 +409,11 @@ export const getAppointmentById = async (req, res) => {
   }
 };
 
-// Add prescription
 export const addPrescription = async (req, res) => {
   try {
     const { id: appointmentId } = req.params;
-    const { diagnosis, medications, instructions, followUpDate } = req.body;
+    const { diagnosis, medications, followUpDate } = req.body;
 
-    // Check if appointment exists and belongs to the doctor
     const appointment = await query(
       'SELECT * FROM appointments WHERE id = $1 AND doctor_id = $2',
       [appointmentId, req.user.profile.id]
@@ -441,45 +425,32 @@ export const addPrescription = async (req, res) => {
       });
     }
 
-    // Add prescription using transaction
+    const existingPrescription = await query(
+      'SELECT * FROM prescriptions WHERE appointment_id = $1',
+      [appointmentId]
+    );
+
+    if (existingPrescription[0]) {
+      return res.status(400).json({
+        error: 'Prescription already exists for this appointment'
+      });
+    }
+
     const result = await transaction(async (client) => {
-      // Check if prescription already exists
-      const existingPrescription = await client.query(
-        'SELECT * FROM prescriptions WHERE appointment_id = $1',
-        [appointmentId]
+      const prescription = (await client.query(
+        `
+        INSERT INTO prescriptions (appointment_id, diagnosis, medications, follow_up_date)
+        VALUES ($1, $2, $3, $4)
+        RETURNING *
+        `,
+        [appointmentId, diagnosis, medications, followUpDate]
+      )).rows[0];
+
+      await client.query(
+        'UPDATE appointments SET status = $1 WHERE id = $2',
+        ['completed', appointmentId]
       );
 
-      let prescription;
-      if (existingPrescription.rows[0]) {
-        // Update existing prescription
-        prescription = (await client.query(
-          `
-          UPDATE prescriptions 
-          SET diagnosis = $1, medications = $2, instructions = $3, follow_up_date = $4, updated_at = NOW()
-          WHERE appointment_id = $5
-          RETURNING *
-          `,
-          [diagnosis, medications, instructions, followUpDate, appointmentId]
-        )).rows[0];
-      } else {
-        // Create new prescription
-        prescription = (await client.query(
-          `
-          INSERT INTO prescriptions (appointment_id, diagnosis, medications, instructions, follow_up_date)
-          VALUES ($1, $2, $3, $4, $5)
-          RETURNING *
-          `,
-          [appointmentId, diagnosis, medications, instructions, followUpDate]
-        )).rows[0];
-
-        // Update appointment status to completed
-        await client.query(
-          'UPDATE appointments SET status = $1 WHERE id = $2',
-          ['completed', appointmentId]
-        );
-      }
-
-      // Get updated appointment with prescription
       const updatedAppointment = (await client.query(
         `
         SELECT 
@@ -488,7 +459,6 @@ export const addPrescription = async (req, res) => {
             'id', p.id,
             'diagnosis', p.diagnosis,
             'medications', p.medications,
-            'instructions', p.instructions,
             'followUpDate', p.follow_up_date,
             'createdAt', p.created_at,
             'updatedAt', p.updated_at
@@ -544,13 +514,11 @@ export const addPrescription = async (req, res) => {
   }
 };
 
-// Update prescription
 export const updatePrescription = async (req, res) => {
   try {
     const { id: appointmentId } = req.params;
     const { diagnosis, medications, instructions, followUpDate } = req.body;
 
-    // Check if appointment exists and belongs to the doctor
     const appointment = await query(
       'SELECT * FROM appointments WHERE id = $1 AND doctor_id = $2',
       [appointmentId, req.user.profile.id]
@@ -562,7 +530,6 @@ export const updatePrescription = async (req, res) => {
       });
     }
 
-    // Check if prescription exists
     const prescription = await query(
       'SELECT * FROM prescriptions WHERE appointment_id = $1',
       [appointmentId]
@@ -574,7 +541,6 @@ export const updatePrescription = async (req, res) => {
       });
     }
 
-    // Update prescription
     const result = await transaction(async (client) => {
       await client.query(
         `
@@ -585,7 +551,6 @@ export const updatePrescription = async (req, res) => {
         [diagnosis, medications, instructions, followUpDate, appointmentId]
       );
 
-      // Get updated appointment with prescription
       const updatedAppointment = (await client.query(
         `
         SELECT 
@@ -650,12 +615,10 @@ export const updatePrescription = async (req, res) => {
   }
 };
 
-// Create appointment (patient only)
 export const createAppointment = async (req, res) => {
   try {
     const { doctorId, appointmentDate, startTime, endTime, type, reason } = req.body;
 
-    // Check if the doctor exists
     const doctor = await query('SELECT * FROM doctors WHERE id = $1', [doctorId]);
     if (!doctor[0]) {
       return res.status(404).json({
@@ -663,7 +626,6 @@ export const createAppointment = async (req, res) => {
       });
     }
 
-    // Get patient ID from user profile
     const patient = await query('SELECT * FROM patients WHERE user_id = $1', [req.user.id]);
     if (!patient[0]) {
       return res.status(404).json({
@@ -671,7 +633,6 @@ export const createAppointment = async (req, res) => {
       });
     }
 
-    // Check if the time slot is available
     const conflictingAppointment = await query(
       `SELECT * FROM appointments 
        WHERE doctor_id = $1 
@@ -690,9 +651,7 @@ export const createAppointment = async (req, res) => {
       });
     }
 
-    // Create appointment using transaction
     const result = await transaction(async (client) => {
-      // Create the appointment
       const appointmentQuery = `
         INSERT INTO appointments (
           doctor_id, 
@@ -719,7 +678,6 @@ export const createAppointment = async (req, res) => {
         'scheduled'
       ])).rows[0];
 
-      // Get full appointment details with doctor and patient info
       const fullAppointmentQuery = `
         SELECT 
           a.*,
@@ -771,13 +729,11 @@ export const createAppointment = async (req, res) => {
   }
 };
 
-// Update appointment
 export const updateAppointment = async (req, res) => {
   try {
     const { id } = req.params;
     const { appointmentDate, startTime, endTime, type, reason, status } = req.body;
 
-    // Check if appointment exists
     const existingAppointment = await query(
       `SELECT a.*, 
         CASE 
@@ -797,14 +753,12 @@ export const updateAppointment = async (req, res) => {
       });
     }
 
-    // Check authorization
     if (existingAppointment[0].user_id !== req.user.id) {
       return res.status(403).json({
         error: 'Not authorized to update this appointment'
       });
     }
 
-    // If changing date/time, check for conflicts
     if (appointmentDate && startTime && endTime) {
       const conflictingAppointment = await query(
         `SELECT * FROM appointments 
@@ -832,9 +786,7 @@ export const updateAppointment = async (req, res) => {
       }
     }
 
-    // Update appointment using transaction
     const result = await transaction(async (client) => {
-      // Build update query dynamically based on provided fields
       const updates = [];
       const values = [];
       let paramCount = 1;
@@ -872,7 +824,6 @@ export const updateAppointment = async (req, res) => {
 
       updates.push(`updated_at = NOW()`);
 
-      // Add appointment ID as the last parameter
       values.push(id);
 
       const updateQuery = `
@@ -884,7 +835,6 @@ export const updateAppointment = async (req, res) => {
 
       const updatedAppointment = (await client.query(updateQuery, values)).rows[0];
 
-      // Get full appointment details
       const fullAppointmentQuery = `
         SELECT 
           a.*,
@@ -936,12 +886,10 @@ export const updateAppointment = async (req, res) => {
   }
 };
 
-// Delete appointment
 export const deleteAppointment = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Check if appointment exists and user has permission
     const appointment = await query(
       `SELECT a.*, 
         CASE 
@@ -961,14 +909,12 @@ export const deleteAppointment = async (req, res) => {
       });
     }
 
-    // Check authorization
     if (appointment[0].user_id !== req.user.id) {
       return res.status(403).json({
         error: 'Not authorized to delete this appointment'
       });
     }
 
-    // Only allow deletion of upcoming appointments
     const appointmentDate = new Date(appointment[0].appointment_date);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -979,7 +925,6 @@ export const deleteAppointment = async (req, res) => {
       });
     }
 
-    // Delete appointment
     await query('DELETE FROM appointments WHERE id = $1', [id]);
 
     res.json({

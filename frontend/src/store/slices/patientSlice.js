@@ -103,9 +103,16 @@ export const cancelAppointment = createAsyncThunk(
   'patient/cancelAppointment',
   async ({ patientId, appointmentId, reason }, { rejectWithValue }) => {
     try {
-      const response = await axios.put(
+      const token = localStorage.getItem('token');
+      const config = {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      };
+      const response = await axios.post(
         `${API_URL}/patients/${patientId}/appointments/${appointmentId}/cancel`,
-        { reason }
+        { reason: reason || 'Cancelled by patient' },
+        config
       );
       return response.data;
     } catch (error) {

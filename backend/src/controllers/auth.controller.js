@@ -2,7 +2,6 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { transaction, findByField, query } from '../utils/db.js';
 
-// Set a default JWT secret if not provided in environment variables
 const JWT_SECRET = process.env.JWT_SECRET || 'medicare_super_secret_key_2024';
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '30d';
 
@@ -18,7 +17,6 @@ export const register = async (req, res) => {
   try {
     const { email, password, firstName, lastName, phone, role, ...profileData } = req.body;
 
-    // Check if user already exists
     const existingUser = await findByField('users', 'email', email);
     if (existingUser) {
       return res.status(400).json({
@@ -26,13 +24,10 @@ export const register = async (req, res) => {
       });
     }
 
-    // Hash password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Create user and profile using transaction
     const result = await transaction(async (client) => {
-      // Create user
       const userQuery = `
         INSERT INTO users (email, password, first_name, last_name, phone, role)
         VALUES ($1, $2, $3, $4, $5, $6)
@@ -41,7 +36,6 @@ export const register = async (req, res) => {
       const userValues = [email, hashedPassword, firstName, lastName, phone, role];
       const user = (await client.query(userQuery, userValues)).rows[0];
 
-      // Create role-specific profile
       let profile;
       if (role === 'doctor') {
         const { specialization, qualifications, experience, consultationFee, about } = profileData;
@@ -66,7 +60,6 @@ export const register = async (req, res) => {
       return { user, profile };
     });
 
-    // Generate token
     const token = generateToken(result.user);
 
     res.status(201).json({
@@ -92,7 +85,6 @@ export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Get user with profile
     const userQuery = `
       SELECT u.*, 
         CASE 
@@ -127,7 +119,6 @@ export const login = async (req, res) => {
       });
     }
 
-    // Check if password matches
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(401).json({
@@ -135,17 +126,14 @@ export const login = async (req, res) => {
       });
     }
 
-    // Check if user is active
     if (!user.is_active) {
       return res.status(401).json({
         error: 'Your account has been deactivated'
       });
     }
 
-    // Get profile
     const profileData = (await query(userQuery, [email]))[0];
 
-    // Generate token
     const token = generateToken(user);
 
     res.json({
@@ -224,7 +212,6 @@ export const getMe = async (req, res) => {
   }
 };
 
-// Update profile
 export const updateProfile = async (req, res) => {
   try {
     const {
@@ -242,9 +229,7 @@ export const updateProfile = async (req, res) => {
       address
     } = req.body;
 
-    // Update user using transaction
     const result = await transaction(async (client) => {
-      // Update user
       const userQuery = `
         UPDATE users 
         SET first_name = $1, last_name = $2, phone = $3
@@ -258,7 +243,6 @@ export const updateProfile = async (req, res) => {
         req.user.id
       ])).rows[0];
 
-      // Update role-specific profile
       let profile;
       if (req.user.role === 'doctor') {
         const doctorQuery = `
